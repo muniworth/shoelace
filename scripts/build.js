@@ -16,14 +16,13 @@ import { replace } from 'esbuild-plugin-replace';
 
 const { serve } = commandLineArgs([{ name: 'serve', type: Boolean }]);
 const outdir = 'dist';
-const cdndir = 'cdn';
 const sitedir = '_site';
 const spinner = ora({ hideCursor: false }).start();
 const execPromise = util.promisify(exec);
 let childProcess;
 let buildResults;
 
-const bundleDirectories = [cdndir, outdir];
+const bundleDirectories = [outdir];
 let packageData = JSON.parse(readFileSync(path.join(process.cwd(), 'package.json'), 'utf-8'));
 const shoelaceVersion = JSON.stringify(packageData.version.toString());
 
@@ -111,7 +110,6 @@ async function buildTheSource() {
       // React wrappers
       ...(await globby('./src/react/**/*.ts'))
     ],
-    outdir: cdndir,
     chunkNames: 'chunks/[name].[hash]',
     define: {
       // Floating UI requires this to be set
@@ -143,12 +141,12 @@ async function buildTheSource() {
 
   if (serve) {
     // Use the context API to allow incremental dev builds
-    const contexts = await Promise.all([esbuild.context(cdnConfig), esbuild.context(npmConfig)]);
+    const contexts = await Promise.all([esbuild.context(npmConfig)]);
     await Promise.all(contexts.map(context => context.rebuild()));
     return contexts;
   } else {
     // Use the standard API for production builds
-    return await Promise.all([esbuild.build(cdnConfig), esbuild.build(npmConfig)]);
+    return await Promise.all([esbuild.build(npmConfig)]);
   }
 }
 
@@ -198,13 +196,13 @@ await nextTask('Generating component metadata', () => {
   );
 });
 
-await nextTask('Wrapping components for React', () => {
-  return execPromise(`node scripts/make-react.js --outdir "${outdir}"`, { stdio: 'inherit' });
-});
+// await nextTask('Wrapping components for React', () => {
+//   return execPromise(`node scripts/make-react.js --outdir "${outdir}"`, { stdio: 'inherit' });
+// });
 
-await nextTask('Generating themes', () => {
-  return execPromise(`node scripts/make-themes.js --outdir "${outdir}"`, { stdio: 'inherit' });
-});
+// await nextTask('Generating themes', () => {
+//   return execPromise(`node scripts/make-themes.js --outdir "${outdir}"`, { stdio: 'inherit' });
+// });
 
 await nextTask('Packaging up icons', () => {
   return execPromise(`node scripts/make-icons.js --outdir "${outdir}"`, { stdio: 'inherit' });
@@ -214,26 +212,9 @@ await nextTask('Running the TypeScript compiler', () => {
   return execPromise(`tsc --project ./tsconfig.prod.json --outdir "${outdir}"`, { stdio: 'inherit' });
 });
 
-// Copy the above steps to the CDN directory directly so we don't need to twice the work for nothing.
-await nextTask(`Themes, Icons, and TS Types to "${cdndir}"`, async () => {
-  await deleteAsync(cdndir);
-  await copy(outdir, cdndir);
-});
-
 await nextTask('Building source files', async () => {
   buildResults = await buildTheSource();
 });
-
-// Copy the CDN build to the docs (prod only; we use a virtual directory in dev)
-if (!serve) {
-  await nextTask(`Copying the build to "${sitedir}"`, async () => {
-    await deleteAsync(sitedir);
-
-    // We copy the CDN build because that has everything bundled. Yes this looks weird.
-    // But if we do "/cdn" it requires changes all the docs to do /cdn instead of /dist.
-    await copy(cdndir, path.join(sitedir, 'dist'));
-  });
-}
 
 // Launch the dev server
 if (serve) {
@@ -324,18 +305,18 @@ if (serve) {
 }
 
 // Build for production
-if (!serve) {
-  let result;
+// if (!serve) {
+//   let result;
 
-  await nextTask('Building the docs', async () => {
-    result = await buildTheDocs();
-  });
+//   await nextTask('Building the docs', async () => {
+//     result = await buildTheDocs();
+//   });
 
-  // Log deferred output
-  if (result.output.length > 0) {
-    console.log('\n' + result.output.join('\n'));
-  }
-}
+//   // Log deferred output
+//   if (result.output.length > 0) {
+//     console.log('\n' + result.output.join('\n'));
+//   }
+// }
 
 // Cleanup on exit
 process.on('SIGINT', handleCleanup);
