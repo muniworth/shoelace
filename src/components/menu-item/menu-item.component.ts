@@ -109,7 +109,7 @@ export default class SlMenuItem extends ShoelaceElement {
 
   private handleMouseOver = (event: MouseEvent) => {
     // https://github.com/shoelace-style/shoelace/issues/1282
-    // this.focus();
+    if (this.isSubmenu()) this.focus();
     event.stopPropagation();
   };
 
