@@ -74,11 +74,13 @@ export default class SlMenuItem extends ShoelaceElement {
   connectedCallback() {
     super.connectedCallback();
     this.addEventListener('click', this.handleHostClick);
+    this.addEventListener('mouseover', this.handleMouseOver);
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
     this.removeEventListener('click', this.handleHostClick);
+    this.removeEventListener('mouseover', this.handleMouseOver);
   }
 
   private handleDefaultSlotChange() {
@@ -103,6 +105,12 @@ export default class SlMenuItem extends ShoelaceElement {
       event.preventDefault();
       event.stopImmediatePropagation();
     }
+  };
+
+  private handleMouseOver = (event: MouseEvent) => {
+    // https://github.com/shoelace-style/shoelace/issues/1282
+    // this.focus();
+    event.stopPropagation();
   };
 
   @watch('checked')
