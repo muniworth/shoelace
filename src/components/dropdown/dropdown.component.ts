@@ -49,7 +49,7 @@ export default class SlDropdown extends ShoelaceElement {
 
   @query('.dropdown') popup: SlPopup;
   @query('.dropdown__trigger') trigger: HTMLSlotElement;
-  @query('.dropdown__panel') panel: HTMLSlotElement;
+  @query('.dropdown__panel') panelSlot: HTMLSlotElement;
 
   private readonly localize = new LocalizeController(this);
   private closeWatcher: CloseWatcher | null;
@@ -119,7 +119,7 @@ export default class SlDropdown extends ShoelaceElement {
   }
 
   firstUpdated() {
-    this.panel.hidden = !this.open;
+    this.panelSlot.hidden = !this.open;
 
     // If the dropdown is visible on init, update its position
     if (this.open) {
@@ -141,10 +141,15 @@ export default class SlDropdown extends ShoelaceElement {
     }
   }
 
-  getMenu() {
-    return this.panel.assignedElements({ flatten: true }).find(el => el.tagName.toLowerCase() === 'sl-menu') as
-      | SlMenu
-      | undefined;
+  getMenu(): SlMenu | undefined {
+    for (const el of this.panelSlot.assignedElements({ flatten: true })) {
+      if (el.tagName.toLowerCase() === 'sl-menu')
+        return el as SlMenu
+      const child = el.querySelector("sl-menu")
+      if (child)
+        return child
+    }
+    return undefined
   }
 
   private handleKeyDown = (event: KeyboardEvent) => {
@@ -358,7 +363,7 @@ export default class SlDropdown extends ShoelaceElement {
   }
 
   addOpenListeners() {
-    this.panel.addEventListener('sl-select', this.handlePanelSelect);
+    this.panelSlot.addEventListener('sl-select', this.handlePanelSelect);
     if ('CloseWatcher' in window) {
       this.closeWatcher?.destroy();
       this.closeWatcher = new CloseWatcher();
@@ -367,16 +372,16 @@ export default class SlDropdown extends ShoelaceElement {
         this.focusOnTrigger();
       };
     } else {
-      this.panel.addEventListener('keydown', this.handleKeyDown);
+      this.panelSlot.addEventListener('keydown', this.handleKeyDown);
     }
     document.addEventListener('keydown', this.handleDocumentKeyDown);
     document.addEventListener('mousedown', this.handleDocumentMouseDown);
   }
 
   removeOpenListeners() {
-    if (this.panel) {
-      this.panel.removeEventListener('sl-select', this.handlePanelSelect);
-      this.panel.removeEventListener('keydown', this.handleKeyDown);
+    if (this.panelSlot) {
+      this.panelSlot.removeEventListener('sl-select', this.handlePanelSelect);
+      this.panelSlot.removeEventListener('keydown', this.handleKeyDown);
     }
     document.removeEventListener('keydown', this.handleDocumentKeyDown);
     document.removeEventListener('mousedown', this.handleDocumentMouseDown);
@@ -398,7 +403,7 @@ export default class SlDropdown extends ShoelaceElement {
       this.addOpenListeners();
 
       await stopAnimations(this);
-      this.panel.hidden = false;
+      this.panelSlot.hidden = false;
       this.popup.active = true;
       const { keyframes, options } = getAnimation(this, 'dropdown.show', { dir: this.localize.dir() });
       await animateTo(this.popup.popup, keyframes, options);
@@ -412,7 +417,7 @@ export default class SlDropdown extends ShoelaceElement {
       await stopAnimations(this);
       const { keyframes, options } = getAnimation(this, 'dropdown.hide', { dir: this.localize.dir() });
       await animateTo(this.popup.popup, keyframes, options);
-      this.panel.hidden = true;
+      this.panelSlot.hidden = true;
       this.popup.active = false;
 
       this.emit('sl-after-hide');
