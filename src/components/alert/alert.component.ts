@@ -89,6 +89,11 @@ export default class SlAlert extends ShoelaceElement {
    */
   @property({ type: String, reflect: true }) countdown?: 'rtl' | 'ltr';
 
+  /**
+   * An optional click handler, invoked when the alert is clicked. Clicks on the close button do not trigger it.
+   */
+  @property({ attribute: false }) onclick: ((event: MouseEvent) => unknown) | null = null;
+
   @state() private remainingTime = this.duration;
 
   firstUpdated() {
@@ -138,6 +143,13 @@ export default class SlAlert extends ShoelaceElement {
 
   private handleCloseClick() {
     this.hide();
+  }
+
+  private handleClick(event: MouseEvent) {
+    if ((event.target as HTMLElement).closest('.alert__close-button')) {
+      return;
+    }
+    this.onclick?.call(this, event);
   }
 
   @watch('open', { waitUntilFirstUpdate: true })
@@ -255,6 +267,7 @@ export default class SlAlert extends ShoelaceElement {
         aria-hidden=${this.open ? 'false' : 'true'}
         @mouseenter=${this.pauseAutoHide}
         @mouseleave=${this.resumeAutoHide}
+        @click=${this.handleClick}
       >
         <div part="icon" class="alert__icon">
           <slot name="icon"></slot>
