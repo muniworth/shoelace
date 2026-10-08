@@ -1,9 +1,6 @@
 import * as path from 'path';
-import { customElementJetBrainsPlugin } from 'custom-element-jet-brains-integration';
 import { customElementVsCodePlugin } from 'custom-element-vs-code-integration';
-import { customElementVuejsPlugin } from 'custom-element-vuejs-integration';
 import { parse } from 'comment-parser';
-import { pascalCase } from 'pascal-case';
 import commandLineArgs from 'command-line-args';
 import fs from 'fs';
 
@@ -142,25 +139,6 @@ export default {
     },
 
     {
-      name: 'shoelace-react-event-names',
-      analyzePhase({ ts, node, moduleDoc }) {
-        switch (node.kind) {
-          case ts.SyntaxKind.ClassDeclaration: {
-            const className = node.name.getText();
-            const classDoc = moduleDoc?.declarations?.find(declaration => declaration.name === className);
-
-            if (classDoc?.events) {
-              classDoc.events.forEach(event => {
-                event.reactName = `on${pascalCase(event.name)}`;
-                event.eventName = `${pascalCase(event.name)}Event`;
-              });
-            }
-          }
-        }
-      }
-    },
-
-    {
       name: 'shoelace-translate-module-paths',
       packageLinkPhase({ customElementsManifest }) {
         customElementsManifest?.modules?.forEach(mod => {
@@ -207,24 +185,6 @@ export default {
           url: `https://shoelace.style/components/${tag.replace('sl-', '')}`
         }
       ]
-    }),
-
-    customElementJetBrainsPlugin({
-      outdir: './dist',
-      excludeCss: true,
-      packageJson: false,
-      referencesTemplate: (_, tag) => {
-        return {
-          name: 'Documentation',
-          url: `https://shoelace.style/components/${tag.replace('sl-', '')}`
-        };
-      }
-    }),
-
-    customElementVuejsPlugin({
-      outdir: './dist/types/vue',
-      fileName: 'index.d.ts',
-      componentTypePath: (_, tag) => `../../components/${tag.replace('sl-', '')}/${tag.replace('sl-', '')}.component.js`
     })
   ]
 };
